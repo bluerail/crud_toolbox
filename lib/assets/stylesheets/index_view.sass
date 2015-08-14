@@ -1,0 +1,112 @@
+@import bootstrap/variables
+@import bootstrap/mixins
+
+$font-size-table-options: 11px
+$color-primary: #053655
+$color-primary-text: white
+
+
+.index-view
+  font-size: $font-size-table-options
+  margin-top: 2px
+
+  form.formtastic
+    padding: 0
+
+  caption
+    text-align: left
+    padding: .2em
+    margin-left: 1em
+
+    strong
+      font-size: 1.3em
+
+  .header-buttons
+    color: $color-primary-text
+    background-color: $color-primary
+
+    .btn.btn-default
+      @include button-variant(#333, #fff, #ccc)
+
+  &.table-bordered > thead > tr > td
+    border-bottom-width: 0
+    border-top-width: 0
+
+
+  &.table > thead > tr > th
+    background-color: #fff
+
+  th
+    text-align: left
+    padding: 0
+
+    // Prevent putting a line break between the header and order icon
+    white-space: nowrap
+
+    // Can't use position: relative on a t{d,h} with all browsers
+    .relative-wrapper
+      position: relative
+
+    .filter
+      position: absolute
+      right: 5px
+      top: 2px
+      //max-width: 150px;
+      width: 125px
+      max-width: 75%
+      padding: 0px 5px
+      display: none
+      font-weight: normal
+      //height: auto
+      height: 1.8em
+      line-height: 1.8em
+      background-color: #fffdca
+
+    .order
+      cursor: pointer
+      line-height: 2.2
+      width: 2em
+      text-align: center
+
+    .order, .column
+      cursor: pointer
+
+    .filter:focus
+      display: block
+
+    &:hover .filter
+      display: block
+
+  .button-col
+    width: 2em
+
+  .pagination
+    margin: 0
+
+    .dropdown-toggle
+      border-radius: 0
+      margin-right: -1px
+
+
+  & > tbody > tr:not(.no-highlight)
+    &:hover
+      background-color: #fffdca
+      cursor: pointer
+
+    a:hover
+      text-decoration: none
+
+    & > td
+      vertical-align: middle
+
+  .semi-active
+    opacity: .5
+
+  .with-selected
+    display: inline
+    vertical-align: middle
+
+    margin-left: 1em
+
+    span
+      margin-right: .5em
