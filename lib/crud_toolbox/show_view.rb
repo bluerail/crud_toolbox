@@ -1,5 +1,5 @@
-module ShowView; end
-class ShowView::Base
+module CrudToolbox::ShowView; end
+class CrudToolbox::ShowView::Base
   attr_accessor :attributes, :header, :record
 
   def initialize controller, record

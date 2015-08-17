@@ -1,4 +1,4 @@
-module DefaultActions::Controller
+module CrudToolbox::Controller
   extend ActiveSupport::Concern
 
   require 'pundit'
@@ -6,7 +6,7 @@ module DefaultActions::Controller
   included do
     include Pundit
 
-    protect_from_forgery with: :exception
+    ###protect_from_forgery with: :exception
     before_action :load_resource
     before_action :set_paths
   end
@@ -79,7 +79,7 @@ module DefaultActions::Controller
   # GET /record/:id
   def show
     unless @show_view.present?
-      klass = "ShowView::#{self.record_class}".safe_constantize
+      klass = "CrudToolbox::ShowView::#{self.record_class}".safe_constantize
       @show_view = k.new self, @record unless klass.nil?
     end
   end
@@ -97,27 +97,27 @@ module DefaultActions::Controller
 
   # GET /records
   def index
-    unless @index_view.present?
+    unless @list_view.present?
       if formats.include?(:json) && params[:tbl_id].present?
         table_class = params[:tbl_id]
       else
         table_class = record_class
       end
 
-      klass = "IndexView::#{record_class}".safe_constantize
+      klass = "CrudToolbox::ListView::#{record_class}".safe_constantize
       unless klass.nil?
         # Ignore params if they're intended for a different class
         if !formats.include?(:json) && params[:tbl_id] != self.record_class.to_s
-          @index_view = klass.new self, @records
+          @list_view = klass.new self, @records
         else
-          @index_view = klass.new self, @records, order: params[:order], filter: params[:filter]
+          @list_view = klass.new self, @records, order: params[:order], filter: params[:filter]
         end
       end
     end
 
     respond_to do |format|
       format.html
-      format.json { render json: @index_view}
+      format.json { render json: @list_view}
     end
   end
 
@@ -257,16 +257,16 @@ module DefaultActions::Controller
     end
 
 
-    def index_view_json
+    def list_view_json
       tbody = render_to_string(
-        partial: 'default_actions/index_table_tbody',
-        locals: {table: @index_view},
+        partial: 'crud_toolbox/index_table_tbody',
+        locals: {table: @list_view},
         layout: nil,
         formats: :html
       )
       buttons = render_to_string(
-        partial: 'default_actions/index_table_buttons',
-        locals: {table: @index_view},
+        partial: 'crud_toolbox/index_table_buttons',
+        locals: {table: @list_view},
         layout: nil,
         formats: :html
       )

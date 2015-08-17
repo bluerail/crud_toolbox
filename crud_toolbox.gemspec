@@ -1,7 +1,7 @@
 $:.push File.expand_path("../lib", __FILE__)
 
 Gem::Specification.new do |s|
-  s.name = "default_actions"
+  s.name = 'crud_toolbox'
   s.version = '0.1'
   s.authors = ["Martin Tournoij"]
   s.email = ["martin@lico.nl"]

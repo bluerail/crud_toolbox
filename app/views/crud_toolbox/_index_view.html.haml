@@ -6,7 +6,7 @@
 
 %table.table.table-striped.table-condensed.index-view{id: index_view.id, 'data-url' => index_view.xhr_url}
   %thead
-    = render partial: 'default_actions/index_view_buttons', locals: { index_view: index_view }
+    = render partial: 'crud_toolbox/index_view_buttons', locals: { index_view: index_view }
 
     %tr
       - index_view.cols.each do |col|
@@ -29,10 +29,10 @@
                 %input.form-control.filter(type="search" placeholder="Filter" value="#{index_view.filter[col.order.to_s]}")
 
   %tfoot
-    = render partial: 'default_actions/index_view_buttons', locals: { index_view: index_view }
+    = render partial: 'crud_toolbox/index_view_buttons', locals: { index_view: index_view }
 
   %tbody
-    = render partial: 'default_actions/index_view_tbody', locals: { index_view: index_view }
+    = render partial: 'crud_toolbox/index_view_tbody', locals: { index_view: index_view }
 
 - if index_view.checkboxes && index.present?
   </form>

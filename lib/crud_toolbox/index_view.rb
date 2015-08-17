@@ -1,5 +1,6 @@
-module IndexView; end
-class IndexView::Base
+module CrudToolbox::ListView; end
+
+class CrudToolbox::ListView::Base
   class Col
     attr_reader :header, :order, :where, :class, :sort_as, :values
 
