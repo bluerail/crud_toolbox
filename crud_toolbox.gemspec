@@ -13,10 +13,11 @@ Gem::Specification.new do |s|
   s.files = Dir["{app,lib}/**/*", "MIT-LICENSE"]
   #s.test_files = Dir["test/**/*"]
 
-  s.add_dependency 'rails', '~> 4.2.0'
-  s.add_dependency 'kaminari', '~> 0.16.0'
-  s.add_dependency 'pundit', '~> 0.3.0'
-  s.add_dependency 'jquery-rails', '~> 4.0.0'
+  s.add_dependency 'rails'
+  s.add_dependency 'kaminari'
+  s.add_dependency 'pundit'
+  s.add_dependency 'jquery-rails'
+  s.add_dependency 'sugar-rails'
 
   s.add_development_dependency "sqlite3"
 end

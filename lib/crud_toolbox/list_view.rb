@@ -152,12 +152,16 @@ class CrudToolbox::ListView::Base
   end
 
 
+  def col_title column
+    #I18n.t("activerecord.attributes.#{self.record_name}.#{column}")
+    s_("#{self.record_class}|#{column.to_s.humanize}")
+  end
+
   # Create column
   def col header, order=false, where: nil, sort_as: nil, values: nil
     if header.is_a? Symbol
       order = header if order == false
-      #header = I18n.t("activerecord.attributes.#{self.record_name}.#{header}")
-      header = s_("#{self.record_class}|#{header.to_s.humanize}")
+      header = self.col_title  header
     end
 
     return Col.new header, order: order, where: where, sort_as: sort_as, values: values
@@ -187,12 +191,16 @@ class CrudToolbox::ListView::Base
   end
 
 
+  def path_prefix
+  end
+
+
   def paths record
     {
-      show: [(record || @record)],
-      edit: [:edit, (record || @record)],
-      new: [:new, record_name],
-      index: [record_name.pluralize],
+      show: [self.path_prefix, (record || @record)].compact,
+      edit: [:edit, self.path_prefix, (record || @record)].compact,
+      new: [:new, self.path_prefix, record_name].compact,
+      index: [self.path_prefix, record_name.pluralize].compact,
     }
   end
 

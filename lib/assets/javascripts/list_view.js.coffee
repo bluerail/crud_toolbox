@@ -11,7 +11,7 @@ show_search = (input, apply=true, delayed=true) ->
 
   if apply
     apply_search.cancel()
-    apply_search.delay (if delayed then 200 else 0), $(input).closest '.index-view'
+    apply_search.delay (if delayed then 200 else 0), $(input).closest '.list-view'
 
 
 apply_search = (tbl) ->
@@ -94,26 +94,26 @@ fix_column_width = (tbl, width=null) ->
 
 
 $(document).ready ->
-  $(document).on 'keydown ', '.index-view .filter', (e) -> show_search $(this)
-  $(document).on 'blur change', '.index-view .filter', (e) -> show_search $(this), true, false
+  $(document).on 'keydown ', '.list-view .filter', (e) -> show_search $(this)
+  $(document).on 'blur change', '.list-view .filter', (e) -> show_search $(this), true, false
 
-  pdata = get_data $('.index-view')
-  $$('.index-view .filter').each (f) -> show_search $(f), false
-  $(document).on 'click', '.index-view th .order', order
-  $(document).on 'click', '.index-view th .column', (e) ->
+  pdata = get_data $('.list-view')
+  $$('.list-view .filter').each (f) -> show_search $(f), false
+  $(document).on 'click', '.list-view th .order', order
+  $(document).on 'click', '.list-view th .column', (e) ->
     b = $(this).next()
     b.click() if b.is('.order')
 
-  $(document).on 'click', '.index-view .per', per
+  $(document).on 'click', '.list-view .per', per
 
-  $('.index-view').on 'click', 'tbody tr', (e) ->
+  $('.list-view').on 'click', 'tbody tr', (e) ->
     target = $(e.target)
     return if target.prop('tagName') is 'A' or target.hasClass('btn') or target.hasClass('fa')
     link = $(this).find('td:eq(1) > a:eq(0)').attr('href')
     window.location = link if link?
 
   # Checkboxes
-  $('.index-view').on 'change', 'thead input[type=checkbox]', (e) ->
+  $('.list-view').on 'change', 'thead input[type=checkbox]', (e) ->
     if $(this).hasClass 'semi-active'
       $(this).closest('table').find('tbody input[type=checkbox]').prop 'checked', false
       $(this)
@@ -124,7 +124,7 @@ $(document).ready ->
     else
       $(this).closest('table').find('tbody input[type=checkbox]').prop 'checked', false
 
-  $('.index-view').on 'change', 'tbody input[type=checkbox]', (e) ->
+  $('.list-view').on 'change', 'tbody input[type=checkbox]', (e) ->
     if $(this).prop 'checked'
       $(this).closest('table').find('thead input[type=checkbox]')
         .addClass 'semi-active'
@@ -135,7 +135,7 @@ $(document).ready ->
         .prop 'checked', false
 
   # Toggle display of all filters
-  $('.index-view').on 'click', '.show-all-search', (e) ->
+  $('.list-view').on 'click', '.show-all-search', (e) ->
     e.preventDefault()
 
     filters = $(this).closest('table').find '.filter'

@@ -5,5 +5,5 @@ module CrudToolbox
 end
 
 require 'crud_toolbox/controller'
-require 'crud_toolbox/index_view'
+require 'crud_toolbox/list_view'
 require 'crud_toolbox/show_view'

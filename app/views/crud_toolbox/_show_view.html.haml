@@ -1,0 +1,23 @@
+- if show_view.header
+  %div{class: show_view.header[:class]}= show_view.header[:text]
+
+%table.table.table-condensed.show-view
+  - if show_view.caption
+    %caption= show_view.caption
+
+  %tbody
+    - show_view.attributes.each do |row|
+      %tr
+        - if row[:label].nil?
+          %td{colspan: 2}
+            - if row[:value].respond_to? :call
+              = row[:value].call
+            - else
+              = row[:value]
+        - else
+          %th= row[:label]
+          %td
+            - if row[:value].respond_to? :call
+              = row[:value].call
+            - else
+              = row[:value]

@@ -6,18 +6,29 @@ module CrudToolbox::Controller
   included do
     include Pundit
 
-    ###protect_from_forgery with: :exception
+    protect_from_forgery with: :exception
     before_action :load_resource
     before_action :set_paths
   end
 
-  
+
   # Get the +params+ for this record
   def record_params
-    params.require(record_name).permit self.allowed_fields
+    return {} if params[record_name].nil?
+
+    if self.use_form_this?
+      params.require(record_name).permit!.merge fixed_params
+    else
+      params.require(record_name).permit self.allowed_fields
+    end
   end
 
-  
+
+  def fixed_params
+    {}
+  end
+
+
   def allowed_fields
     []
   end
@@ -62,16 +73,20 @@ module CrudToolbox::Controller
   end
 
 
+  def path_prefix
+  end
+  
+
   # Assign +@paths+; this function is run once with +before_action+, which is
   # usually okay. However, if you change +@record+ or +@form+ in your action,
   # you need to re-run this again to set the correct path.
-  def set_paths
+  def set_paths record=nil
     @paths = {
-      form: [use_form_this? ? @form : @record],
-      show: [@record],
-      edit: [:edit, @record],
-      new: [:new, @record],
-      index: [self.record_name.pluralize],
+      form: [self.path_prefix, use_form_this? ? @form : (record || @record)].compact,
+      show: [self.path_prefix, (record || @record)].compact,
+      edit: [:edit, self.path_prefix, (record || @record)].compact,
+      new: [:new, self.path_prefix, (record || @record)].compact,
+      index: [self.path_prefix, self.record_name.pluralize].compact,
     }
   end
 
@@ -79,8 +94,8 @@ module CrudToolbox::Controller
   # GET /record/:id
   def show
     unless @show_view.present?
-      klass = "CrudToolbox::ShowView::#{self.record_class}".safe_constantize
-      @show_view = k.new self, @record unless klass.nil?
+      klass = "ShowView::#{self.record_class}".safe_constantize
+      @show_view = klass.new self, @record unless klass.nil?
     end
   end
 
@@ -104,7 +119,7 @@ module CrudToolbox::Controller
         table_class = record_class
       end
 
-      klass = "CrudToolbox::ListView::#{record_class}".safe_constantize
+      klass = "ListView::#{record_class}".safe_constantize
       unless klass.nil?
         # Ignore params if they're intended for a different class
         if !formats.include?(:json) && params[:tbl_id] != self.record_class.to_s
@@ -117,7 +132,7 @@ module CrudToolbox::Controller
 
     respond_to do |format|
       format.html
-      format.json { render json: @list_view}
+      format.json { render json: list_view_json }
     end
   end
 
@@ -189,7 +204,7 @@ module CrudToolbox::Controller
 
 
   def use_form_this?
-    defined? FormThis
+    !!defined?(FormThis)
   end
 
 
@@ -198,11 +213,12 @@ module CrudToolbox::Controller
   end
 
 
-  private
+  protected
 
     def load_resource
       load_resource_all
       build_form if self.use_form_this?
+      self.set_paths if @paths.nil? || @paths[:show] == [self.path_prefix].compact
     end
 
 
@@ -259,14 +275,14 @@ module CrudToolbox::Controller
 
     def list_view_json
       tbody = render_to_string(
-        partial: 'crud_toolbox/index_table_tbody',
-        locals: {table: @list_view},
+        partial: 'crud_toolbox/list_view_tbody',
+        locals: { list_view: @list_view },
         layout: nil,
         formats: :html
       )
       buttons = render_to_string(
-        partial: 'crud_toolbox/index_table_buttons',
-        locals: {table: @list_view},
+        partial: 'crud_toolbox/list_view_buttons',
+        locals: { list_view: @list_view },
         layout: nil,
         formats: :html
       )
