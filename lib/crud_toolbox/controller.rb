@@ -109,7 +109,7 @@ module CrudToolbox::Controller
       form: [self.namespace, CrudToolbox.use_form_this? ? @form : (record || @record)].compact,
       show: [self.namespace, (record || @record)].compact,
       edit: [:edit, self.namespace, (record || @record)].compact,
-      new: [:new, self.namespace, (record || @record)].compact,
+      new: [:new, self.namespace, self.record_name].compact,
       index: [self.namespace, self.record_name.pluralize].compact,
     }
   end
