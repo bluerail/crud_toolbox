@@ -1,8 +1,11 @@
+# TODO: We could class-fy this
+
 req = null
 pdata = null
 
 
-show_search = (input, apply=true, delayed=true) ->
+# Show the filter field +input+
+show_filter = (input, apply=true, delayed=true) ->
   if input.val() is ''
     input.removeClass('has-value')
     input.css 'display', '' unless input.attr 'data-sticky'
@@ -10,11 +13,12 @@ show_search = (input, apply=true, delayed=true) ->
     input.addClass('has-value').css 'display', 'block'
 
   if apply
-    apply_search.cancel()
-    apply_search.delay (if delayed then 200 else 0), $(input).closest '.list-view'
+    apply_filter.cancel()
+    apply_filter.delay (if delayed then 200 else 0), $(input).closest '.list-view'
 
 
-apply_search = (tbl) ->
+# Apply all filters set for +tbl+
+apply_filter = (tbl) ->
   filter = (tbl.find('.filter').toArray()
     .map (f) -> [$(f).closest('th').attr('data-column'), $(f).val().trim()]
     .filter (f) -> f[1] isnt ''
@@ -29,6 +33,7 @@ apply_search = (tbl) ->
   reload tbl
 
 
+# Set the order
 # TODO: Also take previous sort into account
 order = (e) ->
   icon = $(this).find '.fa'
@@ -47,6 +52,7 @@ order = (e) ->
   reload tbl
 
 
+# Set how many records to show
 per = (e) ->
   e.preventDefault()
   tbl = $(this).closest('table')
@@ -57,6 +63,7 @@ per = (e) ->
   reload tbl
 
 
+# Get teh current filter/order/etc. settings for +tbl+
 get_data = (tbl) ->
   query = chronicle.getQuery()
   return {
@@ -67,7 +74,7 @@ get_data = (tbl) ->
   }
 
 
-# Reload table; if the query string changed
+# Reload table from the server
 reload = (tbl) ->
   req.abort() if req
 
@@ -87,25 +94,54 @@ reload = (tbl) ->
       tbl.find('tfoot').html data.buttons
 
 
-# Fix column width to the current width, preventing auto resizing
+# Fix column width to the current width. This prevents (annoying) auto-resizing
+# when filtering.
+#
+# TODO: Maybe we want this to be an option? Or a button?
 fix_column_width = (tbl, width=null) ->
   tbl.find('thead th').toArray().each (th) ->
     $(th).css 'width', "#{$(th).outerWidth()}px"
 
 
 $(document).ready ->
-  $(document).on 'keydown ', '.list-view .filter', (e) -> show_search $(this)
-  $(document).on 'blur change', '.list-view .filter', (e) -> show_search $(this), true, false
-
   pdata = get_data $('.list-view')
-  $$('.list-view .filter').each (f) -> show_search $(f), false
+
+  # Filter when input has changed
+  $(document).on 'keydown ', '.list-view .filter', (e) -> show_filter $(this)
+  $(document).on 'blur change', '.list-view .filter', (e) -> show_filter $(this), true, false
+
+  # Show filter fields
+  $$('.list-view .filter').each (f) -> show_filter $(f), false
   $(document).on 'click', '.list-view th .order', order
   $(document).on 'click', '.list-view th .column', (e) ->
     b = $(this).next()
     b.click() if b.is('.order')
 
+  # Toggle display of all filters
+  $('.list-view').on 'click', '.show-all-search', (e) ->
+    e.preventDefault()
+
+    filters = $(this).closest('table').find '.filter'
+
+    if $(this).prop 'clicked'
+      $(this).prop 'clicked', false
+      filters.each ->
+        return if $(this).val() isnt ''
+        $(this)
+          .removeAttr 'data-sticky'
+          .css 'display', ''
+    else
+      $(this).prop 'clicked', true
+      filters.each ->
+        $(this)
+          .attr 'data-sticky', true
+          .css 'display', 'block'
+
+  # Change pagination
   $(document).on 'click', '.list-view .per', per
 
+  # Open the link when we click anywhere
+  # TODO: We can CSS this, so we don't really need this
   $('.list-view').on 'click', 'tbody tr', (e) ->
     target = $(e.target)
     return if target.prop('tagName') is 'A' or target.hasClass('btn') or target.hasClass('fa')
@@ -133,23 +169,3 @@ $(document).ready ->
       $(this).closest('table').find('thead input[type=checkbox]')
         .removeClass 'semi-active'
         .prop 'checked', false
-
-  # Toggle display of all filters
-  $('.list-view').on 'click', '.show-all-search', (e) ->
-    e.preventDefault()
-
-    filters = $(this).closest('table').find '.filter'
-
-    if $(this).prop 'clicked'
-      $(this).prop 'clicked', false
-      filters.each ->
-        return if $(this).val() isnt ''
-        $(this)
-          .removeAttr 'data-sticky'
-          .css 'display', ''
-    else
-      $(this).prop 'clicked', true
-      filters.each ->
-        $(this)
-          .attr 'data-sticky', true
-          .css 'display', 'block'

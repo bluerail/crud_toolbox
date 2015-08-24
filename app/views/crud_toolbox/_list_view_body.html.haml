@@ -1,11 +1,9 @@
 - if list_view.records.length == 0
   %tr.no-highlight
     %td(colspan="#{list_view.cols.length}")
-      = I18n.t('No results')
+      Geen resultaten
 
--# This makes development slightly easier sometimes
 - raise Exception, list_view.records.to_sql if Rails.env.development? and params[:to_sql].present?
-
 - list_view.records.each do |row|
   %tr
     %td
@@ -19,12 +17,12 @@
               %li
                 = link_to list_view.paths(row)[:edit] do
                   = fa_icon 'pencil'
-                  = I18n.t('Edit')
+                  Bewerken
             - if policy(row).destroy?
               %li
                 = link_to list_view.paths(row)[:show], data: { method: :delete, confirm: 'Verwijderen?', 'confirm-btnclass' => 'btn btn-danger' } do
                   = fa_icon 'trash-o'
-                  = I18n.t('Remove')
+                  Verwijderen
 
             - btns.each do |b|
               %li= b

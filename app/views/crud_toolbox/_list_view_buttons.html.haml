@@ -1,16 +1,17 @@
-%tr.header-buttons
-  %td{colspan: list_view.cols.length}
-    - if list_view.show_new_button && (!list_view.records.is_a?(Array) && policy(list_view.record_class.new).new?)
-      = link_to list_view.paths(@record)[:new], class: 'btn btn-default btn-sm' do
-        = fa_icon 'plus'
-        Nieuw
+- if list_view.show_new_button && (!list_view.records.is_a?(Array) && policy(list_view.record_class.new).new?)
+  = link_to list_view.paths(@record)[:new], class: 'btn btn-default btn-sm' do
+    = fa_icon 'plus'
+    = I18n.t('New')
 
-    - btns = list_view.header_buttons
-    = btns if btns.present?
+- btns = list_view.header_buttons
+= btns if btns.present?
 
-    .pull-right
-      - unless list_view.locals[:no_filter]
-        = link_to '#', class: 'btn btn-default show-all-search', title: 'Toon alle zoekvelden' do
-          = fa_icon 'search'
-      - if list_view.records.respond_to?(:total_pages) and list_view.records.present?
-        = paginate list_view.records
+.pull-right
+  -# Show all search fields
+  -# TODO: Make a setting for this to be the default
+  - unless list_view.locals[:no_filter]
+    = link_to '#', class: 'btn btn-default show-all-search', title: I18n.t('Show all filters') do
+      = fa_icon 'search'
+
+  - if list_view.records.respond_to?(:total_pages) and list_view.records.present?
+    = paginate list_view.records

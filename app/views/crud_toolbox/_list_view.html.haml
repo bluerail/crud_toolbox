@@ -1,38 +1,26 @@
+-# Show checkboxes before every row
 - if list_view.checkboxes
   - index = list_view.paths(controller.record_class.new)[:index]
   - if index.present?
     <form class="form-without-padding" action="#{polymorphic_path(index)}/many" method="post">
     %input(type="hidden" name="authenticity_token" value="#{form_authenticity_token}")
 
+
 %table.table.table-striped.table-condensed.list-view{id: list_view.id, 'data-url' => list_view.xhr_url}
   %thead
-    = render partial: 'crud_toolbox/list_view_buttons', locals: { list_view: list_view }
-
+    %tr.header-buttons
+      %td{colspan: list_view.cols.length}
+        = render partial: 'crud_toolbox/list_view_buttons', locals: { list_view: list_view }
     %tr
-      - list_view.cols.each do |col|
-        %th(data-column="#{col.order}" class="#{col.class}")
-          .relative-wrapper
-            %span.column= col.header
-            - if !list_view.locals[:no_order]
-              - if col.order.present?
-                - if list_view.order[:key].to_s == col.order.to_s
-                  %span.order= fa_icon "sort-#{list_view.order[:dir]}"
-                - elsif col.order.present?
-                  %span.order= fa_icon 'sort'
-            - if col.order.present? && !list_view.locals[:no_filter]
-              - if col.values.present?
-                %select.form-control.no-select2.filter
-                  %option(value="")
-                  - col.values.each do |v|
-                    %option{value: v, selected: v == list_view.filter[col.order.to_s]}= v
-              - else
-                %input.form-control.filter(type="search" placeholder="Filter" value="#{list_view.filter[col.order.to_s]}")
+      = render partial: 'crud_toolbox/list_view_headers', locals: { list_view: list_view }
 
   %tfoot
-    = render partial: 'crud_toolbox/list_view_buttons', locals: { list_view: list_view }
+    %tr.header-buttons
+      %td{colspan: list_view.cols.length}
+        = render partial: 'crud_toolbox/list_view_buttons', locals: { list_view: list_view }
 
   %tbody
-    = render partial: 'crud_toolbox/list_view_tbody', locals: { list_view: list_view }
+    = render partial: 'crud_toolbox/list_view_body', locals: { list_view: list_view }
 
 - if list_view.checkboxes && index.present?
   </form>

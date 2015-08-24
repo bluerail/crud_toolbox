@@ -1,0 +1,26 @@
+- list_view.cols.each do |col|
+  %th(data-column="#{col.order}" class="#{col.class}")
+    .relative-wrapper
+      %span.column= col.header
+
+      -# Order icons
+      - unless list_view.locals[:no_order]
+        - if col.order.present?
+          - if list_view.order[:key].to_s == col.order.to_s
+            %span.order= fa_icon "sort-#{list_view.order[:dir]}"
+          - elsif col.order.present?
+            %span.order= fa_icon 'sort'
+
+      -# Filter
+      - if col.order.present? && !list_view.locals[:no_filter]
+        - if col.values.present? # Static list (eg. enum)
+          %select.form-control.no-select2.filter
+            %option(value="")
+            - col.values.each do |v|
+              %option{value: v, selected: v == list_view.filter[col.order.to_s]}= v
+        - elsif col.date?  # Date range
+          -# TODO
+          %input.form-control.filter.date-range
+        - else # Free text
+          %input.form-control.filter(type="search" placeholder="Filter" value="#{list_view.filter[col.order.to_s]}")
+

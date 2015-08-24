@@ -1,7 +1,11 @@
 module CrudToolbox::Controller
   extend ActiveSupport::Concern
 
-  require 'pundit'
+  begin
+    require 'pundit'
+  rescue LoadError
+    # Do nothing
+  end
 
   included do
     include Pundit
@@ -13,42 +17,61 @@ module CrudToolbox::Controller
 
 
   # Get the +params+ for this record
+  #
+  # If you use FormThis!, we return all parameters. This is safe since you
+  # already define attributes in the form class.
+  #
+  # If you don't use FormThis!, we use the value of +allowed_fields+
+  #
+  # Additionally, you can override +fixed_params+ to add parameters you always
+  # want to be present. This is useful when you always want to include the same
+  # parent object id.
   def record_params
-    return {} if params[record_name].nil?
+    return {} if params[self.record_name].nil?
 
-    if self.use_form_this?
-      params.require(record_name).permit!.merge fixed_params
+    if CrudToolbox.use_form_this?
+      params.require(self.record_name).permit!.merge fixed_params
     else
-      params.require(record_name).permit self.allowed_fields
+      params.require(self.record_name).permit self.allowed_fields
     end
   end
 
-
+  # Fixed parameters for this record.
+  #
+  # This is expected to return a Hash
   def fixed_params
     {}
   end
 
 
+  # Allowed fields for this record.
+  #
+  # This is expected to return something that +params.permit+ understands.
   def allowed_fields
     []
   end
 
 
   # Apply pagination to the +list+
-  def apply_pagination list
+  def apply_pagination list, page_param=:page
     list = Kaminari.paginate_array list if list.is_a? Array
-    list.page(params[:page] || 1).per(params[:per])
+    list.page(params[page_param] || 1).per(params[:per])
   end
 
 
-  # Get the name of the associated ActiveRecord; usually this can be inferred,
-  # but in rare cases you could overwrite it
+  # Get the name of the associated ActiveRecord class.
+  #
+  # This can usually this can be inferred from the controller name, but in some
+  # cases you need to overwrite it.
   def record_name
     params[:controller].split('/').pop.downcase.singularize
   end
 
 
   # Get the ActiveRecord class
+  #
+  # You should almost never have to overwrite this, as it uses
+  # +self.record_name+
   def record_class
     name = self.record_name.capitalize
     # Replace underscores
@@ -58,6 +81,8 @@ module CrudToolbox::Controller
 
 
   # Get the FormThis! class
+  #
+  # This uses +self.record_name+
   def form_class
     name = self.record_name.capitalize
     # Replace underscores
@@ -66,28 +91,40 @@ module CrudToolbox::Controller
   end
 
 
-  # Human readable name
-  def model_title
-    #@_title ||= I18n.t(self.record_class).capitalize
-    @_title ||= _(self.record_class.to_s.titleize.humanize)
+  # Human readable name for the current record.
+  def record_title
+    if CrudToolbox.use_gettext?
+      @_title ||= _(self.record_class.to_s.titleize.humanize)
+    else
+      @_title ||= I18n.t(self.record_class).capitalize
+    end
   end
 
-
-  def path_prefix
-  end
-  
 
   # Assign +@paths+; this function is run once with +before_action+, which is
   # usually okay. However, if you change +@record+ or +@form+ in your action,
   # you need to re-run this again to set the correct path.
   def set_paths record=nil
     @paths = {
-      form: [self.path_prefix, use_form_this? ? @form : (record || @record)].compact,
-      show: [self.path_prefix, (record || @record)].compact,
-      edit: [:edit, self.path_prefix, (record || @record)].compact,
-      new: [:new, self.path_prefix, (record || @record)].compact,
-      index: [self.path_prefix, self.record_name.pluralize].compact,
+      form: [self.namespace, CrudToolbox.use_form_this? ? @form : (record || @record)].compact,
+      show: [self.namespace, (record || @record)].compact,
+      edit: [:edit, self.namespace, (record || @record)].compact,
+      new: [:new, self.namespace, (record || @record)].compact,
+      index: [self.namespace, self.record_name.pluralize].compact,
     }
+  end
+
+  # Set a namespace for the paths.
+  #
+  #   namespace :admin do
+  #     .. your routes
+  #   end
+  #
+  # We try to infer this by default
+  def namespace
+    ns = self.class.to_s.split('::')
+    return nil if ns.length == 0
+    return ns[0].downcase
   end
 
 
@@ -116,10 +153,10 @@ module CrudToolbox::Controller
       if formats.include?(:json) && params[:tbl_id].present?
         table_class = params[:tbl_id]
       else
-        table_class = record_class
+        table_class = self.record_class
       end
 
-      klass = "ListView::#{record_class}".safe_constantize
+      klass = "ListView::#{self.record_class}".safe_constantize
       unless klass.nil?
         # Ignore params if they're intended for a different class
         if !formats.include?(:json) && params[:tbl_id] != self.record_class.to_s
@@ -132,14 +169,33 @@ module CrudToolbox::Controller
 
     respond_to do |format|
       format.html
-      format.json { render json: list_view_json }
+      format.json do
+        tbody = render_to_string(
+          partial: 'crud_toolbox/list_view_tbody',
+          locals: { list_view: @list_view },
+          layout: nil,
+          formats: :html
+        )
+        buttons = render_to_string(
+          partial: 'crud_toolbox/list_view_buttons',
+          locals: { list_view: @list_view },
+          layout: nil,
+          formats: :html
+        )
+
+        render json: {
+          success: true,
+          tbody: tbody,
+          buttons: buttons,
+        }
+      end
     end
   end
 
 
   # PATCH /record/:id
   def update
-    if self.use_form_this?
+    if CrudToolbox.use_form_this?
       success = @form.validate(record_params) && @form.save
     else
       success = @record.update record_params
@@ -156,13 +212,13 @@ module CrudToolbox::Controller
     end
   end
   def update_okay_message
-    _('%{model_title} ‘%{record}’ has been edited.') % {model_title: self.model_title, record: @record.to_s}
+    _('%{record_title} ‘%{record}’ has been edited.') % {record_title: self.record_title, record: @record.to_s}
   end
 
 
   # POST /record
   def create
-    if self.use_form_this?
+    if CrudToolbox.use_form_this?
       success = @form.validate(record_params) && @form.save
     else
       success = @record.update record_params
@@ -179,7 +235,7 @@ module CrudToolbox::Controller
     end
   end
   def create_okay_message
-    _('%{model_title} ‘%{record}’ created.') % {model_title: self.model_title, record: @record.to_s}
+    _('%{record_title} ‘%{record}’ created.') % {record_title: self.record_title, record: @record.to_s}
   end
 
 
@@ -196,20 +252,10 @@ module CrudToolbox::Controller
     end
   end
   def destroy_okay_message
-    _('%{model_title} ‘%{record}’ removed.') % {model_title: self.model_title, record: @record.to_s}
+    _('%{record_title} ‘%{record}’ removed.') % {record_title: self.record_title, record: @record.to_s}
   end
   def destroy_failed_message
-    _('Removing %{model_title} ‘%{record}’ failed: %{errors}') % {model_title: self.model_title, record: @record.to_s, errors: @record.errors[:base].join(',')}
-  end
-
-
-  def use_form_this?
-    !!defined?(FormThis)
-  end
-
-
-  def use_pundit?
-    true
+    _('Removing %{record_title} ‘%{record}’ failed: %{errors}') % {record_title: self.record_title, record: @record.to_s, errors: @record.errors[:base].join(',')}
   end
 
 
@@ -217,7 +263,7 @@ module CrudToolbox::Controller
 
     def load_resource
       load_resource_all
-      build_form if self.use_form_this?
+      build_form if CrudtoolBox.use_form_this?
       self.set_paths if @paths.nil? || @paths[:show] == [self.path_prefix].compact
     end
 
@@ -234,18 +280,18 @@ module CrudToolbox::Controller
 
 
     def load_resource_index
-      if use_pundit?
-        @records ||= apply_pagination policy_scope(record_class)
+      if CrudToolbox.use_pundit?
+        @records ||= apply_pagination policy_scope(self.record_class)
       else
-        @records ||= apply_pagination record_class
+        @records ||= apply_pagination self.record_class
       end
-      instance_variable_set "@#{record_name.pluralize}", @records
+      instance_variable_set "@#{self.record_name.pluralize}", @records
     end
 
 
     def load_resource_single id=nil
       begin
-        @record ||= record_class.find id || params[:id]
+        @record ||= self.record_class.find id || params[:id]
       rescue ActiveRecord::RecordNotFound
         # Don't leak info about what does and doesn't exist
         # Don't do this in development, since this can be quite confusing
@@ -256,41 +302,19 @@ module CrudToolbox::Controller
         end
       end
 
-      authorize @record if self.use_pundit?
-      instance_variable_set "@#{record_name}", @record
+      authorize @record if CrudToolbox.use_pundit?
+      instance_variable_set "@#{self.record_name}", @record
     end
 
 
     def load_resource_new
-      @record ||= record_class.new
-      authorize @record if self.use_pundit?
-      instance_variable_set "@#{record_name}", @record
+      @record ||= self.record_class.new
+      authorize @record if CrudToolbox.use_pundit?
+      instance_variable_set "@#{self.record_name}", @record
     end
 
 
     def build_form
       @form ||= form_class.new @record if @record.present?
-    end
-
-
-    def list_view_json
-      tbody = render_to_string(
-        partial: 'crud_toolbox/list_view_tbody',
-        locals: { list_view: @list_view },
-        layout: nil,
-        formats: :html
-      )
-      buttons = render_to_string(
-        partial: 'crud_toolbox/list_view_buttons',
-        locals: { list_view: @list_view },
-        layout: nil,
-        formats: :html
-      )
-
-      return {
-        success: true,
-        tbody: tbody,
-        buttons: buttons,
-      }
     end
 end

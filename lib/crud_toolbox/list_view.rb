@@ -1,20 +1,22 @@
 module CrudToolbox::ListView; end
+class CrudToolbox::ListView::Base; end
+
+class CrudToolbox::ListView::Base::Col
+  attr_reader :header, :order, :where, :class, :sort_as, :values
+
+  def initialize header, order: nil, where: nil, klass: nil, sort_as: nil, values: nil
+    @header = header
+    @order = order
+    @where = where
+    @class = klass
+    @sort_as = sort_as
+    @values = values
+  end
+end
+
+
 
 class CrudToolbox::ListView::Base
-  class Col
-    attr_reader :header, :order, :where, :class, :sort_as, :values
-
-    def initialize header, order: nil, where: nil, klass: nil, sort_as: nil, values: nil
-      @header = header
-      @order = order
-      @where = where
-      @class = klass
-      @sort_as = sort_as
-      @values = values
-    end
-  end
-
-
   attr_reader :controller, :order, :filter, :locals
   attr_accessor :show_new_button, :show_row_buttons, :xhr_url
 
@@ -34,11 +36,20 @@ class CrudToolbox::ListView::Base
   end
 
 
+  # A unique string to identify this +ListView+. By default, we use the class name.
+  #
+  # This is used when there are multiple +ListView+s on a single page; we need
+  # to know which view to apply the filtering/ordering parameters to.
   def id
     self.class.to_s.split('::')[1]
   end
 
 
+  # Filter the records.
+  # 
+  # +filter+ is a string in the form of:
+  #
+  #   col_name^find,col_name2^find2
   def apply_filter filter
     if filter.present?
       filter.split(',').each do |f|
@@ -86,6 +97,11 @@ class CrudToolbox::ListView::Base
   end
 
 
+  # Order the records.
+  #
+  # +order+ is a string in the form of:
+  #
+  #   col_name {asc,desc}
   def apply_order order
     if order.blank?
       @order = self.default_order
@@ -147,15 +163,18 @@ class CrudToolbox::ListView::Base
 
 
   def record_name
-    #self.record_class.to_s.tableize.singularize
-    self.class.to_s.split('::').pop.tableize.singularize
+    controller.record_name
   end
 
 
   def col_title column
-    #I18n.t("activerecord.attributes.#{self.record_name}.#{column}")
-    s_("#{self.record_class}|#{column.to_s.humanize}")
+    if CrudToolbox.use_gettext?
+      s_("#{self.record_class}|#{column.to_s.humanize}")
+    else
+      I18n.t("activerecord.attributes.#{self.record_name}.#{column}")
+    end
   end
+
 
   # Create column
   def col header, order=false, where: nil, sort_as: nil, values: nil
@@ -191,16 +210,17 @@ class CrudToolbox::ListView::Base
   end
 
 
-  def path_prefix
+  def namespace
+    controller.namespace
   end
 
 
   def paths record
     {
-      show: [self.path_prefix, (record || @record)].compact,
-      edit: [:edit, self.path_prefix, (record || @record)].compact,
-      new: [:new, self.path_prefix, record_name].compact,
-      index: [self.path_prefix, record_name.pluralize].compact,
+      show: [self.namespace, (record || @record)].compact,
+      edit: [:edit, self.namespace, (record || @record)].compact,
+      new: [:new, self.namespace, record_name].compact,
+      index: [self.namespace, record_name.pluralize].compact,
     }
   end
 
@@ -231,8 +251,10 @@ class CrudToolbox::ListView::Base
   end
 
 
-  def enum_col_where model, column, value, arel, translate_value=true
+  def date_col model, column, range=true
+    # TODO
   end
+
 
   ## ActionView Helpers
 
