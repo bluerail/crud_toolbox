@@ -85,7 +85,7 @@ module CrudToolbox::Controller
       form: [self.path_prefix, use_form_this? ? @form : (record || @record)].compact,
       show: [self.path_prefix, (record || @record)].compact,
       edit: [:edit, self.path_prefix, (record || @record)].compact,
-      new: [:new, self.path_prefix, (record || @record)].compact,
+      new: [:new, self.path_prefix, self.record_name].compact,
       index: [self.path_prefix, self.record_name.pluralize].compact,
     }
   end
