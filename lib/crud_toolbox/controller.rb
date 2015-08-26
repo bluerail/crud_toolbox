@@ -97,6 +97,12 @@ module CrudToolbox::Controller
       klass = "ShowView::#{self.record_class}".safe_constantize
       @show_view = klass.new self, @record unless klass.nil?
     end
+
+    respond_to do |format|
+      format.html
+      # TODO: Maybe we want to render the @show_view, rather than the @record?
+      format.json { render json: @record }
+    end
   end
 
 
