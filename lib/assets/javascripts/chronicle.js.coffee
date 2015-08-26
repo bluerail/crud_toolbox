@@ -55,3 +55,9 @@ window.chronicle =
     query = @getQuery()
     query[k] = v
     @setQuery query
+
+
+Array.prototype.toObject = ->
+  obj = Object.extended()
+  this.each (a) -> obj[a[0]] = a[1]
+  return obj
