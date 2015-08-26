@@ -1,3 +1,7 @@
+#= require sugar
+#= require jquery
+#= require_directory .
+
 req = null
 pdata = null
 
