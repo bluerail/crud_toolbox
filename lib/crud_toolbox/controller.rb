@@ -176,7 +176,12 @@ module CrudToolbox::Controller
 
     respond_to do |format|
       if success
-        format.html { redirect_to(params[:commit_and_add_more].nil? ? @paths[:index] : @paths[:new], notice: self.create_okay_message) }
+        redir_to = if params[:commit_and_add_more].nil?
+                  @paths[:index]
+                else
+                  polymorphic_path(@paths[:new]) + '?' + (params[:commit_and_add_more].presence || '')
+                end
+        format.html { redirect_to(redir_to, notice: self.create_okay_message) }
         format.json { render json: @record, status: :created, location: @record }
       else
         format.html { render action: 'new' }
