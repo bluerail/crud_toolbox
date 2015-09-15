@@ -1,6 +1,6 @@
 - if list_view.records.length == 0
   %tr.no-highlight
-    %td(colspan="#{list_view.cols.length}")
+    %td{colspan: list_view.cols.length}
       Geen resultaten
 
 - raise Exception, list_view.records.to_sql if Rails.env.development? and params[:to_sql].present?

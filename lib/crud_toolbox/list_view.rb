@@ -168,6 +168,14 @@ class CrudToolbox::ListView::Base
   end
 
 
+  # Create a "empty" column without header; useful for buttons and the like
+  def empty_col
+    # We need the :order parameter here because self.cols uses this as a hash
+    # key
+    self.col(nil, SecureRandom.hex)
+  end
+
+
   def cols merge=[]
     return @_cols.values if @_cols.present?
 
