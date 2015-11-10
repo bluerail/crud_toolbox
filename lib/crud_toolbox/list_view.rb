@@ -238,10 +238,6 @@ class CrudToolbox::ListView::Base
     })
   end
 
-
-  def enum_col_where model, column, value, arel, translate_value=true
-  end
-
   ## ActionView Helpers
 
   def helpers
