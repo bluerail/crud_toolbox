@@ -17,10 +17,10 @@ module CrudToolbox
       attr_reader :controller, :order, :filter, :locals
       attr_accessor :show_new_button, :show_row_buttons, :xhr_url
 
-      def initialize(controller, arel, order: {}, filter: {}, xhr_url: nil, locals: {})
-        @order = {}
-        @filter = {}
+      def initialize(controller, arel, order: '', filter: '', xhr_url: nil, locals: {})
         @controller = controller
+        @order = order.blank? ? default_order : parse_order(order)
+        @filter = Hash[(filter || '').split(',').map { |f| f.split '^' }]
         @arel = arel
         @xhr_url = xhr_url
         @locals = locals
@@ -28,8 +28,8 @@ module CrudToolbox
         @show_new_button = true
         @show_row_buttons = true
 
-        apply_filter filter
-        apply_order order
+        apply_order @order[:key], @order[:col], @order[:dir]
+        apply_filter @filter
       end
 
       def id
@@ -37,86 +37,84 @@ module CrudToolbox
       end
 
       def apply_filter(filter)
-        if filter.present?
-          filter.split(',').each do |f|
-            f = f.split '^'
-            @filter[f[0]] = f[1]
-          end
-        end
-
         if @arel.respond_to? :where
-          where = {}
-          @filter.each do |k, v|
-            # This line is also important to prevent SQL injections, as it will
-            # error out on unknown columns (feature!)
-            c = get_col k
-
-            # Column doesn't exis so move on to the next one
-            next if c.nil?
-
-            if k.in? record_class.columns.map(&:name)
-              k = "`#{record_class.table_name}`.`#{k}`"
-            else
-              k = "`#{k}`"
-            end
-
-            if c.where.present?
-              @arel = c.where.call @arel, v
-            else
-              where[k] = v
-            end
-          end
-
-          # arel.where("`#{model.table_name}`.`#{column.to_s.singularize}` in (#{sql.join ','})")
-          @arel = @arel
-                  .where(
-                    [where.keys.map { |k| "#{k} like ?" }.join(' and ')] |
-                    where.values.map { |v| "%#{v}%" }
-                  )
+          apply_arel_where(filter)
         else
-          @arel = @arel.reject do |record|
-            @filter
-            .map { |k, v| next true if record.respond_to?(k) && record.send(k).to_s.match(/#{v}/i) }
-            .include? nil
-          end
+          apply_reject(filter)
         end
       end
 
-      def apply_order(order)
-        if order.blank?
-          @order = default_order
-        else
-          @order = {
-            key: order.split(' ')[0],
-            col: order.split(' ')[0],
-            dir: order.split(' ')[1]
-          }
+      def apply_arel_where(filter)
+        where = {}
+        filter.each do |k, v|
+          # This line is also important to prevent SQL injections, as it will
+          # error out on unknown columns (feature!)
+          c = get_col k
 
-          # Special no-op value for columns that can't be sorted
-          return if order.start_with?('NOOP')
+          # Column doesn't exis so move on to the next one
+          next if c.nil?
 
-          # Columns doesn't exist...
-          return if get_col(@order[:col]).nil?
-
-          if get_col(@order[:col]).sort_as.present?
-            @order[:col] = get_col(@order[:col]).sort_as
+          if k.in? record_class.columns.map(&:name)
+            k = "`#{record_class.table_name}`.`#{k}`"
           else
-            @order[:col] = "`#{@order[:col]}`"
+            k = "`#{k}`"
+          end
+
+          if c.where.present?
+            @arel = c.where.call @arel, v
+          else
+            where[k] = v
           end
         end
 
+        # arel.where("`#{model.table_name}`.`#{column.to_s.singularize}` in (#{sql.join ','})")
+        @arel = @arel
+                .where(
+                  [where.keys.map { |k| "#{k} like ?" }.join(' and ')] |
+                  where.values.map { |v| "%#{v}%" }
+                )
+      end
+
+      def apply_reject(filter)
+        @arel = @arel.reject do |record|
+          filter
+          .map { |k, v| next true if record.respond_to?(k) && record.send(k).to_s.match(/#{v}/i) }
+          .include? nil
+        end
+      end
+
+      def parse_order(order_string)
+        key, direction = order_string.split(' ')
+
+        {
+          key: key,
+          col: get_col(key).try(:sort_as).presence || "`#{key}`",
+          dir: direction
+        }
+      end
+
+      def apply_order(key, column_sql, direction)
+        # Ignore columns that can't be sorted or don't exist
+        return if key.start_with?('NOOP') || get_col(key).nil?
+
         if @arel.respond_to? :order
-          @arel = @arel.order "#{@order[:col]} #{@order[:dir]}"
+          apply_arel_order(column_sql, direction)
+        elsif @arel.is_a? Hash
+          # TODO: (contractees)
         else
-          if @arel.is_a? Hash
-            # TODO: (contractees)
-          else
-            if @order[:dir] == 'asc'
-              @arel = @arel.sort { |a, b| a.send(@order[:key]) <=> b.send(@order[:key]) }
-            else
-              @arel = @arel.sort { |a, b| b.send(@order[:key]) <=> a.send(@order[:key]) }
-            end
-          end
+          apply_sort(key, direction)
+        end
+      end
+
+      def apply_arel_order(column_sql, direction)
+        @arel = @arel.order "#{column_sql} #{direction}"
+      end
+
+      def apply_sort(key, direction)
+        if direction == 'asc'
+          @arel = @arel.sort { |a, b| a.send(key) <=> b.send(key) }
+        else
+          @arel = @arel.sort { |a, b| b.send(key) <=> a.send(key) }
         end
       end
 
@@ -134,7 +132,7 @@ module CrudToolbox
       end
 
       def record_class
-        controller.record_class
+        @controller.record_class
       end
 
       def record_name
