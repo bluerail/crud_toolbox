@@ -4,6 +4,7 @@ module CrudToolbox
   end
 end
 
+require 'crud_toolbox/column'
 require 'crud_toolbox/controller'
-require 'crud_toolbox/list_view'
-require 'crud_toolbox/show_view'
+require 'crud_toolbox/list_view/base'
+require 'crud_toolbox/show_view/base'

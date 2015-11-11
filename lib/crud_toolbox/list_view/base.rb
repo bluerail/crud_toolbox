@@ -1,19 +1,6 @@
 module CrudToolbox
   module ListView
     class Base
-      class Col
-        attr_reader :header, :order, :where, :class, :sort_as, :values
-
-        def initialize(header, order: nil, where: nil, klass: nil, sort_as: nil, values: nil)
-          @header = header
-          @order = order
-          @where = where
-          @class = klass
-          @sort_as = sort_as
-          @values = values
-        end
-      end
-
       attr_reader :controller, :order, :filter, :locals
       attr_accessor :show_new_button, :show_row_buttons, :xhr_url
 
@@ -152,7 +139,7 @@ module CrudToolbox
           header = col_title header
         end
 
-        Col.new header, order: order, where: where, sort_as: sort_as, values: values
+        Column.new header, order: order, where: where, sort_as: sort_as, values: values
       end
 
       # Create a "empty" column without header; useful for buttons and the like
@@ -165,7 +152,7 @@ module CrudToolbox
       def cols(merge = [])
         return @_cols.values if @_cols.present?
 
-        cols = [Col.new(nil, klass: 'button-col')] + merge
+        cols = [Column.new(nil, klass: 'button-col')] + merge
         @_cols = {}.with_indifferent_access
         cols.each { |c| @_cols[c.order] = c }
         cols
