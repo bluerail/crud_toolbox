@@ -82,7 +82,7 @@ module CrudToolbox
 
       def apply_order(key, column_sql, direction)
         # Ignore columns that can't be sorted or don't exist
-        return if key.start_with?('NOOP') || get_col(key).nil?
+        return if column_sql.to_s.start_with?('NOOP') || get_col(key).nil?
 
         if @arel.respond_to? :order
           apply_arel_order(column_sql, direction)
