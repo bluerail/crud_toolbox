@@ -143,7 +143,7 @@ module CrudToolbox
     end
 
     def update_okay_message
-      _('%{model_title} ‘%{record}’ has been edited.') % { model_title: model_title, record: @record.to_s }
+      _("%{model_title} '%{record}' has been edited.") % { model_title: model_title, record: @record.to_s }
     end
 
     # POST /record
