@@ -1,0 +1,14 @@
+%span.tally
+  - if collection.total_count == 0
+    Er zijn 0 rijen
+  - else
+    = collection.offset_value + 1
+
+    - if collection.total_count > 1
+      tot
+      = collection.last_page? ? collection.total_count : collection.offset_value + collection.limit_value
+      = "van #{collection.total_count} rijen "
+    - else
+      rij
+
+  = "(gefilterd uit #{collection.unscoped.count} rijen)"

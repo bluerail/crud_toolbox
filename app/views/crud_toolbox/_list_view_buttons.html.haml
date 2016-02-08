@@ -9,6 +9,10 @@
     = btns if btns.present?
 
     .pull-right
+      - unless list_view.locals[:no_tally]
+        = render partial: 'crud_toolbox/tally', locals: { collection: list_view.records }
+        -# = page_entries_info(list_view.records)
+
       - unless list_view.locals[:no_filter]
         = link_to '#', class: 'btn btn-default show-all-search', title: 'Toon alle zoekvelden' do
           = fa_icon 'search'
