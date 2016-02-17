@@ -1,7 +1,7 @@
 %span.tally
-  - if collection.total_count == 0
-    Er zijn 0 rijen
-  - else
+  - if collection.empty?
+    0 rijen
+  - elsif collection.respond_to?(:total_count)
     = collection.offset_value + 1
 
     - if collection.total_count > 1
@@ -10,5 +10,5 @@
       = "van #{collection.total_count} rijen "
     - else
       rij
-
-  = "(gefilterd uit #{collection.unscoped.count} rijen)"
+  - else
+    = pluralize(collection.size, 'rij', 'rijen')
