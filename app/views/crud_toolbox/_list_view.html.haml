@@ -21,10 +21,18 @@
                   %span.order= fa_icon 'sort'
             - if col.order.present? && !list_view.locals[:no_filter]
               - if col.values.present?
-                %select.form-control.no-select2.filter
-                  %option(value="")
-                  - col.values.each do |v|
-                    %option{value: v, selected: v == list_view.filter[col.order.to_s]}= v
+                - if col.multi?
+                  .filter-multi
+                    - col.values.each do |v|
+                      .checkbox
+                        %label
+                          %input{ name: col.order, type: :checkbox, value: v}
+                          = v
+                - else
+                  %select.form-control.no-select2.filter
+                    %option{ value: '' }
+                    - col.values.each do |v|
+                      %option{value: v, selected: v == list_view.filter[col.order.to_s]}= v
               - else
                 %input.form-control.filter(type="search" placeholder="Filter" value="#{list_view.filter[col.order.to_s]}")
 
