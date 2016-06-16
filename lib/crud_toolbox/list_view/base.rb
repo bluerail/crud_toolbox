@@ -38,7 +38,7 @@ module CrudToolbox
           # error out on unknown columns (feature!)
           c = get_col k
 
-          # Column doesn't exis so move on to the next one
+          # Column doesn't exist so move on to the next one
           next if c.nil?
 
           if k.in? record_class.columns.map(&:name)
@@ -133,13 +133,13 @@ module CrudToolbox
       end
 
       # Create column
-      def col(header, order = false, where: nil, sort_as: nil, values: nil)
+      def col(header, order = false, where: nil, sort_as: nil, values: nil, multi: nil)
         if header.is_a? Symbol
           order = header if order == false
           header = col_title header
         end
 
-        Column.new header, order: order, where: where, sort_as: sort_as, values: values
+        Column.new header, order: order, where: where, sort_as: sort_as, values: values, multi: multi
       end
 
       # Create a "empty" column without header; useful for buttons and the like
@@ -180,7 +180,7 @@ module CrudToolbox
         }
       end
 
-      def enum_col(model, column, translate_value = true)
+      def enum_col(model, column, translate_value = true, multi: false, sort_as: nil)
         column_p = column.to_s.pluralize
         values = model.send column_p
 
@@ -192,7 +192,7 @@ module CrudToolbox
           tr_values = values
         end
 
-        col(column, column, values: tr_values.keys, where: lambda do |arel, value|
+        col(column, column, values: tr_values.keys, multi: multi, sort_as: sort_as, where: lambda do |arel, value|
           sql = []
           tr_values.each { |k, v| sql << v if k.match(/#{value}/i) }
 

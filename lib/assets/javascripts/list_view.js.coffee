@@ -17,18 +17,45 @@ show_search = (input, apply=true, delayed=true) ->
     apply_search.cancel()
     apply_search.delay (if delayed then 200 else 0), $(input).closest '.list-view'
 
+show_search_multi = (input) ->
+  apply_search.cancel()
+  apply_search $(input).closest('.list-view')
 
-apply_search = (tbl) ->
-  filter = (tbl.find('.filter').toArray()
+
+filter = (tbl) ->
+  tbl
+    .find('.filter')
+    .toArray()
     .map (f) -> [$(f).closest('th').attr('data-column'), $(f).val().trim()]
     .filter (f) -> f[1] isnt ''
     .map (f) -> "#{f[0]}^#{f[1]}"
+
+filter_multi = (tbl) ->
+  tbl
+    .find('.filter-multi')
+    .toArray()
+    .map (f) ->
+      col = $(f).closest('th').attr('data-column')
+      values = $(f)
+        .find('input:checked')
+        .map -> this.value
+        .toArray()
+        .join('|')
+
+      return null if values == ''
+
+      "#{col}^#{values}"
+    .compact()
+
+apply_search = (tbl) ->
+  filter_str = filter tbl
+    .concat filter_multi tbl
     .join ','
-    .trim())
+    .trim()
 
-  return if filter is '' and not chronicle.getQuery()['filter']?
+  return if filter_str is '' and not chronicle.getQuery()['filter']?
 
-  chronicle.setQueryParam 'filter', filter
+  chronicle.setQueryParam 'filter', filter_str
   chronicle.setQueryParam 'tbl_id', tbl.attr('id')
   reload tbl
 
@@ -100,6 +127,7 @@ fix_column_width = (tbl, width=null) ->
 $(document).ready ->
   $(document).on 'keydown ', '.list-view .filter', (e) -> show_search $(this)
   $(document).on 'blur change', '.list-view .filter', (e) -> show_search $(this), true, false
+  $(document).on 'change', '.filter-multi input', (e) -> show_search_multi $(this)
 
   pdata = get_data $('.list-view')
   $$('.list-view .filter').each (f) -> show_search $(f), false
@@ -116,27 +144,6 @@ $(document).ready ->
     link = $(this).find('td:eq(1) > a:eq(0)').attr('href')
     window.location = link if link?
 
-  # Checkboxes
-  $('.list-view').on 'change', 'thead input[type=checkbox]', (e) ->
-    if $(this).hasClass 'semi-active'
-      $(this).closest('table').find('tbody input[type=checkbox]').prop 'checked', false
-      $(this)
-        .removeClass 'semi-active'
-        .prop 'checked', false
-    else if $(this).prop 'checked'
-      $(this).closest('table').find('tbody input[type=checkbox]').prop 'checked', true
-    else
-      $(this).closest('table').find('tbody input[type=checkbox]').prop 'checked', false
-
-  $('.list-view').on 'change', 'tbody input[type=checkbox]', (e) ->
-    if $(this).prop 'checked'
-      $(this).closest('table').find('thead input[type=checkbox]')
-        .addClass 'semi-active'
-        .prop 'checked', true
-    else if $(this).closest('tbody').find('input[type=checkbox]:checked').length is 0
-      $(this).closest('table').find('thead input[type=checkbox]')
-        .removeClass 'semi-active'
-        .prop 'checked', false
 
   # Toggle display of all filters
   $('.list-view').on 'click', '.show-all-search', (e) ->
