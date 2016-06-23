@@ -22,12 +22,16 @@
             - if col.order.present? && !list_view.locals[:no_filter]
               - if col.values.present?
                 - if col.multi?
-                  .filter-multi
-                    - col.values.each do |v|
-                      .checkbox
-                        %label
-                          %input{ name: col.order, type: :checkbox, value: v}
-                          = v
+                  .dropdown
+                    .filter-multi-status.dropdown-toggle.btn.btn-default.btn-xs{ 'data-toggle': 'dropdown'}
+                      %span.status-text
+                      .status-icon.fa.fa-caret-down
+                    .filter-multi.dropdown-menu.dropdown-menu-right
+                      - col.values.each do |v|
+                        .checkbox
+                          %label
+                            %input{ name: col.order, type: :checkbox, value: v}
+                            = v
                 - else
                   %select.form-control.no-select2.filter
                     %option{ value: '' }

@@ -21,7 +21,6 @@ show_search_multi = (input) ->
   apply_search.cancel()
   apply_search $(input).closest('.list-view')
 
-
 filter = (tbl) ->
   tbl
     .find('.filter')
@@ -30,9 +29,30 @@ filter = (tbl) ->
     .filter (f) -> f[1] isnt ''
     .map (f) -> "#{f[0]}^#{f[1]}"
 
+update_search_multi_label = (container) ->
+  status = $(container).siblings('.filter-multi-status').find('.status-text')
+
+  input_items = $(container).find('input')
+  checked_items = $(container).find('input:checked')
+
+  new_label = ''
+  if input_items.length == checked_items.length || checked_items.length == 0
+    new_label = 'Alles'
+  else if checked_items.length > 1
+    new_label = "#{checked_items.length} filters"
+  else
+    # one item checked
+    new_label = checked_items.val()
+
+  $(status).text(new_label)
+
+
 filter_multi = (tbl) ->
-  tbl
-    .find('.filter-multi')
+  element =  tbl.find('.filter-multi')
+
+  update_search_multi_label(element)
+
+  $(element)
     .toArray()
     .map (f) ->
       col = $(f).closest('th').attr('data-column')
@@ -117,12 +137,29 @@ reload = (tbl) ->
       tbl.find('thead tr:first')[0].outerHTML = data.buttons
       tbl.find('tfoot').html data.buttons
 
+# We make a really weird URL. When people land back on this page, we
+# want the selected multi-select filters to actually be selected.
+# So here's a really weird function to do that.
+initialize_multi_checkboxes = ->
+  filters = /\?filter=([\w\d%\-_,]+)/.exec(window.location.search)
+
+  return unless filters
+
+  filters[filters.length - 1].split(',').each (filter) ->
+    pairs = filter.split "%5E" # split on ^ for [['name', 'val|ue|s']]
+    next unless pairs.length == 2 # value is empty
+
+    name = pairs[0]
+    values = pairs[1].split "%7C" # split on |
+
+    $(".filter-multi input[name=#{name}]").each ->
+      if this.value in values
+        this.checked = true
 
 # Fix column width to the current width, preventing auto resizing
 fix_column_width = (tbl, width=null) ->
   tbl.find('thead th').toArray().each (th) ->
     $(th).css 'width', "#{$(th).outerWidth()}px"
-
 
 $(document).ready ->
   $(document).on 'keydown ', '.list-view .filter', (e) -> show_search $(this)
@@ -144,6 +181,8 @@ $(document).ready ->
     link = $(this).find('td:eq(1) > a:eq(0)').attr('href')
     window.location = link if link?
 
+  initialize_multi_checkboxes()
+  $('.filter-multi').each -> update_search_multi_label(this)
 
   # Toggle display of all filters
   $('.list-view').on 'click', '.show-all-search', (e) ->
