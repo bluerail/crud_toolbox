@@ -35,8 +35,14 @@
                 - else
                   %select.form-control.no-select2.filter
                     %option{ value: '' }
-                    - col.values.each do |v|
-                      %option{value: v, selected: v == list_view.filter[col.order.to_s]}= v
+                      - if col.values.first.is_a?(Array)
+                        - col.values.each do |value, name|
+                          %option{value: value, selected: value == list_view.filter[col.order.to_s]}= name
+                      - else
+                        - col.values.each do |v|
+                          %option{value: v, selected: v == list_view.filter[col.order.to_s]}= v
+
+
               - else
                 %input.form-control.filter(type="search" placeholder="Filter" value="#{list_view.filter[col.order.to_s]}")
 
